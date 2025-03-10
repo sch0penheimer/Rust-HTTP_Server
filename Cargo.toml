@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+hyper = "0.14"
+tokio = { version = "1", features = ["full"] }
+mime_guess = "2.0" # For guessing MIME types based on file extensions
