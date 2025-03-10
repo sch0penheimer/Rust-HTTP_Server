@@ -11,12 +11,13 @@ use std::convert::Infallible;
 //*** File Serving Helper Function ***//
 async fn serve_file(path: &str) -> Result<Response<Body>, Infallible> {
     if !Path::new(path).exists() {
+        eprintln!("File not found: {}", path);
         return Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Body::from("404 Not Found"))
             .unwrap_or_else(|_| Response::new(Body::from("Internal Server Error"))));
     }
-
+    
     //- Async File Opening -//
     let file_result = File::open(path).await;
     let mut file = match file_result {
@@ -29,7 +30,7 @@ async fn serve_file(path: &str) -> Result<Response<Body>, Infallible> {
                 .unwrap_or_else(|_| Response::new(Body::from("Internal Server Error"))));
         }
     };
-
+    
     let mut contents = Vec::new();
     match file.read_to_end(&mut contents).await {
         Ok(_) => {},
@@ -41,10 +42,10 @@ async fn serve_file(path: &str) -> Result<Response<Body>, Infallible> {
                 .unwrap_or_else(|_| Response::new(Body::from("Internal Server Error"))));
         }
     };
-
+    
     //- MIME type guessing -//
     let mime_type = from_path(path).first_or_octet_stream();
-
+    
     Ok(Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, mime_type.as_ref())
@@ -57,19 +58,22 @@ async fn serve_file(path: &str) -> Result<Response<Body>, Infallible> {
 
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let path = req.uri().path();
-    let file_path = match path {
-        //- index.html as default -//
-        "/" => "static/index.html".to_string(),
-        //- Auxiliary Files at root (/) -//
-        _ => format!("static{}", path),
+    
+    let file_path = if path == "/" {
+        //- Root path serves index.html -//
+        "../static/index.html".to_string()
+    } else {
+        //- Remove leading slash and prepend static directory -//
+        format!("../static{}", path)
     };
-
+    
+    println!("<=> Serving file: {}", file_path);
     serve_file(&file_path).await
 }
 
 #[tokio::main]
 async fn main() {
-    //- Loopback adress (localhost) and port choice -//
+    //- Loopback address (localhost) and port choice -//
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     
     let make_svc = make_service_fn(|_conn| async {
@@ -77,11 +81,12 @@ async fn main() {
     });
     
     let server = Server::bind(&addr).serve(make_svc);
-    println("||============================================||");
-    println("||******* Haitam's Rust HTTP WebServer *******||");
-    println("||____________________________________________||");
-    println!(" Running @ {}", addr);
-
+    println!("||============================================||");
+    println!("||******* Haitam's Rust HTTP WebServer *******||");
+    println!("||____________________________________________||");
+    println!(" => Running @ {}", addr);
+    println!(" => Serving files from the ./static directory");
+    
     if let Err(e) = server.await {
         eprintln!("Server error: {}", e);
     }
