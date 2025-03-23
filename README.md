@@ -1,6 +1,6 @@
 # Rust HTTP Static File Web Server
 
-A lightweight and efficient HTTP server built with Rust and Hyper for serving static web content. This server is designed to be simple, fast, and easy to configure, making it perfect for local development or simple web hosting needs.
+A lightweight HTTP server built with Rust and Hyper for serving static web content. This server is designed to be simple, fast, and easy to configure, making it perfect for local development or simple web hosting needs (mainly for static websites).
 
 ## Features
 
